@@ -78,12 +78,14 @@ export function getAuthenticatedUser() {
   return null;
 }
 
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
 /**
  * User Login with server validation and JWT issuance.
  */
 export async function loginUser(email, password) {
   try {
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -133,7 +135,7 @@ export async function registerUser({ name, email, password, confirmPassword }) {
   }
 
   try {
-    const res = await fetch('/api/auth/register', {
+    const res = await fetch(`${API_BASE}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password, confirmPassword })
