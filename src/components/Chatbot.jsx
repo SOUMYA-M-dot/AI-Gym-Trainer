@@ -11,11 +11,10 @@ const QUICK_PROMPTS = [
 ];
 
 const CANDIDATE_MODELS = [
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-pro',
-  'gemini-pro'
+  'gemini-2.5-flash',
+  'gemini-3.5-flash',
+  'gemini-3.6-flash',
+  'gemini-3.8-flash'
 ];
 
 const Chatbot = ({ latestPoseData, theme = 'dark' }) => {

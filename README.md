@@ -77,7 +77,7 @@ Working out from home or exercising solo in the gym comes with a familiar set of
 - **Frontend Core**: [React 19](https://react.dev/), [Vite](https://vitejs.dev/)
 - **Computer Vision**: [Google MediaPipe Pose](https://developers.google.com/mediapipe/solutions/vision/pose_landmarker)
 - **3D Graphics & Simulation**: [Three.js](https://threejs.org/), [@react-three/fiber](https://r3f.docs.pmnd.rs/), [@react-three/drei](https://github.com/pmndrs/drei)
-- **Generative AI Coach**: [Google Generative AI SDK](https://github.com/google/generative-ai-js) (Gemini 1.5 Flash)
+- **Generative AI Coach**: [Google Generative AI SDK](https://github.com/google/generative-ai-js) (Gemini 2.5 / 3.5 Flash)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **Icons & UI**: [Lucide React](https://lucide.dev/)
 - **Voice Feedback**: Web Speech Synthesis API
