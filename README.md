@@ -82,19 +82,6 @@ Working out from home or exercising solo in the gym comes with a familiar set of
 - **Icons & UI**: [Lucide React](https://lucide.dev/)
 - **Voice Feedback**: Web Speech Synthesis API
 
-```mermaid
-flowchart LR
-    A[Webcam Feed] --> B[MediaPipe Pose]
-    B --> C[33 Skeletal Landmarks]
-    C --> D[Biomechanics Trigonometry]
-    C --> E[Three.js 3D Twin]
-    D --> F[Exercise State Machine]
-    F --> G[Rep Counting & Form Scoring]
-    G --> H[Web Speech Voice Coach]
-    G --> I[Local Analytics & Dashboard]
-    J[Google Gemini AI] <--> K[Coach AI Chatbot]
-```
-
 ---
 
 ## 🚀 Quickstart Guide
@@ -150,23 +137,3 @@ npm run preview
 
 ---
 
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome!
-Feel free to check the [issues page](https://github.com/SOUMYA-M-dot/AI-Gym-Trainer/issues) if you want to contribute new exercise routines, improved biomechanics formulas, or enhanced 3D models.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/NewExercise`)
-3. Commit your changes (`git commit -m 'Add NewExercise routine'`)
-4. Push to the branch (`git push origin feature/NewExercise`)
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
-
----
-
-*Made with ❤️ for fitness enthusiasts and developers everywhere.*
