@@ -59,14 +59,82 @@ export function setStoredUser(user) {
   }
 }
 
-export function getMembershipPaid() {
+const GUEST_USAGE_PREFIX = 'ai_gym_guest_used_';
+const PAYMENT_DETAILS_KEY = 'ai_gym_payment_receipt';
+
+export function getMembershipPaid(userEmail = null) {
   if (typeof window === 'undefined') return false;
+  if (userEmail) {
+    const userPaid = localStorage.getItem(`${PAYMENT_KEY}_${userEmail.trim().toLowerCase()}`);
+    if (userPaid === 'true') return true;
+  }
   return localStorage.getItem(PAYMENT_KEY) === 'true';
 }
 
-export function setMembershipPaid(isPaid) {
+export function setMembershipPaid(isPaid, userEmail = null, paymentDetails = null) {
   if (typeof window !== 'undefined') {
     localStorage.setItem(PAYMENT_KEY, isPaid ? 'true' : 'false');
+    if (userEmail) {
+      localStorage.setItem(`${PAYMENT_KEY}_${userEmail.trim().toLowerCase()}`, isPaid ? 'true' : 'false');
+    }
+    if (paymentDetails) {
+      localStorage.setItem(PAYMENT_DETAILS_KEY, JSON.stringify({
+        ...paymentDetails,
+        timestamp: new Date().toISOString()
+      }));
+    }
+  }
+}
+
+export function getLastPaymentDetails() {
+  if (typeof window === 'undefined') return null;
+  const saved = localStorage.getItem(PAYMENT_DETAILS_KEY);
+  return saved ? JSON.parse(saved) : null;
+}
+
+/**
+ * Returns true if the user (or global guest) has already used their 1 free workout trial.
+ */
+export function hasUsedGuestSession(userEmail = null) {
+  if (typeof window === 'undefined') return false;
+  // If user has already paid, guest check is irrelevant (they have full access)
+  if (getMembershipPaid(userEmail)) return false;
+
+  if (userEmail) {
+    const emailKey = `${GUEST_USAGE_PREFIX}${userEmail.trim().toLowerCase()}`;
+    if (localStorage.getItem(emailKey) === 'true') return true;
+  }
+  return localStorage.getItem(`${GUEST_USAGE_PREFIX}global`) === 'true';
+}
+
+/**
+ * Marks the guest trial as consumed (max 1 time).
+ */
+export function markGuestSessionUsed(userEmail = null) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(`${GUEST_USAGE_PREFIX}global`, 'true');
+    if (userEmail) {
+      localStorage.setItem(`${GUEST_USAGE_PREFIX}${userEmail.trim().toLowerCase()}`, 'true');
+    }
+  }
+}
+
+/**
+ * Number of guest sessions remaining: 1 if never used, 0 if used.
+ */
+export function getGuestSessionsRemaining(userEmail = null) {
+  return hasUsedGuestSession(userEmail) ? 0 : 1;
+}
+
+/**
+ * Reset guest session status (for testing purposes).
+ */
+export function resetGuestSession(userEmail = null) {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(`${GUEST_USAGE_PREFIX}global`);
+    if (userEmail) {
+      localStorage.removeItem(`${GUEST_USAGE_PREFIX}${userEmail.trim().toLowerCase()}`);
+    }
   }
 }
 

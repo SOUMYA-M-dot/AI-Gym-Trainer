@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import Chatbot from './components/Chatbot';
 import AvatarCanvas from './components/AvatarCanvas';
 import Auth from './components/Auth';
+import AccessGate from './components/AccessGate';
 import PaymentModal from './components/PaymentModal';
 import HistoryModal from './components/HistoryModal';
 import { ExerciseEngine, EXERCISES, EXERCISE_DETAILS, PPL_SPLITS } from './utils/exerciseLogic';
@@ -20,7 +21,9 @@ import {
   saveStoredDayPlan,
   advanceToNextDayPlan,
   saveWorkoutSession,
-  estimateCalories
+  estimateCalories,
+  hasUsedGuestSession,
+  markGuestSessionUsed
 } from './utils/workoutStorage';
 import { 
   Dumbbell, 
@@ -33,14 +36,17 @@ import {
   Camera, 
   Box, 
   Columns3,
-  Calendar
+  Calendar,
+  Zap,
+  CreditCard
 } from 'lucide-react';
 
 function App() {
   const [theme, setTheme] = useState(() => getStoredTheme());
   const [user, setUser] = useState(() => getStoredUser());
   const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(getStoredUser()));
-  const [isPaid, setIsPaid] = useState(() => getMembershipPaid());
+  const [isPaid, setIsPaid] = useState(() => getMembershipPaid(getStoredUser()?.email));
+  const [isGuestSession, setIsGuestSession] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -82,12 +88,12 @@ function App() {
 
   // Workout Session Timer
   useEffect(() => {
-    if (!isLoggedIn || !isPaid) return;
+    if (!isLoggedIn || (!isPaid && !isGuestSession)) return;
     const interval = setInterval(() => {
       setWorkoutSeconds(prev => prev + 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, [isLoggedIn, isPaid]);
+  }, [isLoggedIn, isPaid, isGuestSession]);
 
   // Handle Day Plan Updates
   const handleDayPlanChange = (updatedPlan) => {
@@ -162,7 +168,7 @@ function App() {
     const totalDayReps = Object.values(finalProgress).reduce((sum, p) => sum + (p.reps || 0), 0);
     const totalDayCalories = Math.round(Object.values(finalProgress).reduce((sum, p) => sum + (p.calories || 0), 0) * 10) / 10;
 
-    if (totalDayReps <= 0) {
+    if (totalDayReps <= 0 && !isGuestSession) {
       alert("Please perform at least 1 repetition before completing today's routine.");
       return;
     }
@@ -175,6 +181,20 @@ function App() {
       durationSeconds: workoutSeconds,
       progress: finalProgress
     });
+
+    if (isGuestSession) {
+      // 1-Time Guest workout completed: mark guest trial used and end session
+      markGuestSessionUsed(user?.email);
+      setIsGuestSession(false);
+      setWorkoutSeconds(0);
+      setDayExerciseProgress({});
+      alert(
+        `🎉 Free Guest Workout Completed!\n\n` +
+        `Total: ${totalDayReps} reps • ${totalDayCalories} kcal.\n\n` +
+        `You have finished your 1-time free workout trial! Upgrade to the Lifetime Athlete Pass for ₹100 via Razorpay to continue training and unlock Day 2!`
+      );
+      return;
+    }
 
     const nextPlan = advanceToNextDayPlan();
     setDayPlan(nextPlan);
@@ -192,9 +212,14 @@ function App() {
 
   // Handle Logout
   const handleLogout = () => {
+    if (isGuestSession) {
+      markGuestSessionUsed(user?.email);
+    }
     setStoredUser(null);
     setUser(null);
     setIsLoggedIn(false);
+    setIsGuestSession(false);
+    setShowPayment(false);
   };
 
   // Auth Screen
@@ -204,6 +229,7 @@ function App() {
         onLogin={(userData) => {
           setUser(userData);
           setIsLoggedIn(true);
+          setIsPaid(getMembershipPaid(userData?.email));
         }} 
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -211,59 +237,23 @@ function App() {
     );
   }
 
-  // Membership Gate Screen
-  if (!isPaid) {
+  // Post-Login Access Gate Screen (Choose between 1-time Guest Trial or Lifetime Pass)
+  if (!isPaid && !isGuestSession) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center p-6 relative transition-colors ${
-        theme === 'dark' ? 'bg-zinc-950 text-white' : 'bg-slate-50 text-slate-900'
-      }`}>
-        <div className="absolute top-6 right-6">
-          <button
-            onClick={toggleTheme}
-            className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
-              theme === 'dark' 
-                ? 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white' 
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-xs'
-            }`}
-          >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-        </div>
-
-        <div className="max-w-xl w-full text-center relative z-10">
-          <div className="inline-block px-3.5 py-1 bg-sky-500/10 border border-sky-500/20 rounded-full text-sky-500 text-xs font-bold tracking-widest uppercase mb-4">
-            Membership Access
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
-            Transform Your Training With Precision Push-Pull-Legs Tracking
-          </h1>
-          <p className={`text-base mb-8 max-w-md mx-auto ${theme === 'dark' ? 'text-zinc-400' : 'text-slate-600'}`}>
-            Unlock real-time PPL split routines, 3D twin modeling, and personalized AI coaching for just ₹100.
-          </p>
-          
-          <button 
-            onClick={() => setShowPayment(true)}
-            className="bg-sky-600 hover:bg-sky-500 active:scale-98 text-white font-bold text-base px-10 py-4 rounded-2xl transition-all shadow-lg cursor-pointer"
-          >
-            Unlock Full Access • ₹100
-          </button>
-          
-          <p className={`mt-6 text-xs ${theme === 'dark' ? 'text-zinc-500' : 'text-slate-400'}`}>
-            One-time activation • Lifetime athlete pass • No recurring fees
-          </p>
-        </div>
-
-        {showPayment && (
-          <PaymentModal 
-            onPaymentSuccess={() => {
-              setIsPaid(true);
-              setShowPayment(false);
-            }} 
-            onClose={() => setShowPayment(false)} 
-            theme={theme}
-          />
-        )}
-      </div>
+      <AccessGate 
+        user={user}
+        onStartGuestSession={() => {
+          setIsGuestSession(true);
+        }}
+        onPaymentSuccess={() => {
+          setIsPaid(true);
+          setIsGuestSession(false);
+          setShowPayment(false);
+        }}
+        onLogout={handleLogout}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
     );
   }
 
@@ -296,11 +286,18 @@ function App() {
                 Day {dayPlan.dayNumber}: {dayPlan.split} Day
               </span>
             </div>
-            <p className={`text-[11px] font-medium mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-              Athlete: <span className="font-semibold">{user?.name || 'Athlete'}</span>
-            </p>
+              <p className={`text-[11px] font-medium mt-0.5 flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                <span>Athlete: <span className="font-semibold">{user?.name || 'Athlete'}</span></span>
+                <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full ${
+                  isPaid 
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                    : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                }`}>
+                  {isPaid ? 'Lifetime Pass ✓' : 'Guest Pass (1/1)'}
+                </span>
+              </p>
+            </div>
           </div>
-        </div>
 
         {/* View Mode Switcher Pills */}
         <div className={`hidden md:flex items-center p-1 rounded-xl border ${
@@ -381,6 +378,17 @@ function App() {
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
+          {/* Upgrade Button (Visible during Guest Session) */}
+          {isGuestSession && (
+            <button
+              onClick={() => setShowPayment(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 active:scale-98 text-white transition-all shadow-xs cursor-pointer"
+            >
+              <Zap size={13} />
+              <span>Upgrade ₹100</span>
+            </button>
+          )}
+
           {/* Logout */}
           <button
             onClick={handleLogout}
@@ -395,6 +403,31 @@ function App() {
           </button>
         </div>
       </header>
+
+      {/* Guest Session Top Banner */}
+      {isGuestSession && (
+        <div className={`px-6 py-2.5 border-b flex items-center justify-between transition-colors ${
+          isDark 
+            ? 'bg-amber-950/40 border-amber-800/40 text-amber-200' 
+            : 'bg-amber-50 border-amber-200 text-amber-900'
+        }`}>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold uppercase tracking-wider text-[10px] border border-amber-500/30 shrink-0">
+              Guest Trial
+            </span>
+            <span className="font-medium">
+              You are using your <strong>1-time free workout session</strong>. Complete routine or upgrade for lifetime access!
+            </span>
+          </div>
+          <button
+            onClick={() => setShowPayment(true)}
+            className="bg-sky-600 hover:bg-sky-500 active:scale-98 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0 ml-3"
+          >
+            <CreditCard size={13} />
+            <span>Unlock Lifetime Pass • ₹100</span>
+          </button>
+        </div>
+      )}
 
       {/* Main Studio Body */}
       <main className="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 h-[calc(100vh-65px)] min-h-[650px] overflow-hidden">
@@ -466,6 +499,20 @@ function App() {
         onClose={() => setShowHistory(false)} 
         theme={theme}
       />
+
+      {/* Razorpay Payment Modal */}
+      {showPayment && (
+        <PaymentModal 
+          user={user}
+          onPaymentSuccess={() => {
+            setIsPaid(true);
+            setIsGuestSession(false);
+            setShowPayment(false);
+          }} 
+          onClose={() => setShowPayment(false)} 
+          theme={theme}
+        />
+      )}
     </div>
   );
 }
