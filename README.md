@@ -77,6 +77,7 @@ Working out from home or exercising solo in the gym comes with a familiar set of
 - **Frontend Core**: [React 19](https://react.dev/), [Vite](https://vitejs.dev/)
 - **Computer Vision**: [Google MediaPipe Pose](https://developers.google.com/mediapipe/solutions/vision/pose_landmarker)
 - **3D Graphics & Simulation**: [Three.js](https://threejs.org/), [@react-three/fiber](https://r3f.docs.pmnd.rs/), [@react-three/drei](https://github.com/pmndrs/drei)
+- **Backend & Database**: Express.js, MongoDB (Mongoose), JSON Web Tokens (JWT), bcryptjs
 - **Generative AI Coach**: [Google Generative AI SDK](https://github.com/google/generative-ai-js) (Gemini 2.5 / 3.5 Flash)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **Icons & UI**: [Lucide React](https://lucide.dev/)
@@ -102,24 +103,32 @@ cd AI-Gym-Trainer
 npm install
 ```
 
-### 3. Setup Gemini API Key *(Optional for AI Coach)*
-If you want to use the integrated Coach AI chatbot, grab a free API key from [Google AI Studio](https://aistudio.google.com/).
-
+### 3. Setup Environment Variables
 Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Add your key inside `.env`:
+Configure your credentials inside `.env`:
 ```env
-VITE_GEMINI_API_KEY=your_actual_gemini_api_key_here
+# Optional Gemini AI Coach Key
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+
+# Razorpay Keys (Test Mode)
+VITE_RAZORPAY_KEY_ID=your_razorpay_key_id_here
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret_here
+
+# Backend & MongoDB Authentication
+PORT=5000
+JWT_SECRET=your_jwt_secret_key_here
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/ai_gym_trainer?retryWrites=true&w=majority
 ```
-*(Note: `.env` is ignored by Git to keep your credentials safe.)*
+*(Note: `.env` is ignored by Git to keep your credentials safe. If no `MONGO_URI` is provided, the server automatically uses a resilient fallback in-memory store).*
 
 ### 4. Run Development Server
 ```bash
 npm run dev
 ```
-Open [http://localhost:5173/](http://localhost:5173/) in your browser, allow camera permissions, and start your workout!
+This runs both the Express auth server (`http://localhost:5000`) and the Vite client (`http://localhost:5173`) concurrently. Open [http://localhost:5173/](http://localhost:5173/) in your browser, allow camera permissions, and start your workout!
 
 ### 5. Build for Production
 ```bash

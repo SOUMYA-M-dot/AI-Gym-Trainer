@@ -45,6 +45,34 @@ export function setStoredTheme(theme) {
 
 export function getStoredUser() {
   if (typeof window === 'undefined') return null;
+  const token = localStorage.getItem('ai_gym_token');
+  if (!token) {
+    // If no JWT token is stored, user is not authenticated
+    localStorage.removeItem(AUTH_KEY);
+    return null;
+  }
+  
+  // Check token expiration
+  try {
+    const base64Url = token.split('.')[1];
+    if (base64Url) {
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(decodeURIComponent(
+        atob(base64).split('').map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+      ));
+      if (payload && payload.exp && payload.exp * 1000 <= Date.now()) {
+        localStorage.removeItem('ai_gym_token');
+        localStorage.removeItem(AUTH_KEY);
+        return null;
+      }
+    }
+  } catch (e) {
+    // Invalid token format
+    localStorage.removeItem('ai_gym_token');
+    localStorage.removeItem(AUTH_KEY);
+    return null;
+  }
+
   const data = localStorage.getItem(AUTH_KEY);
   return data ? JSON.parse(data) : null;
 }
@@ -55,6 +83,7 @@ export function setStoredUser(user) {
       localStorage.setItem(AUTH_KEY, JSON.stringify(user));
     } else {
       localStorage.removeItem(AUTH_KEY);
+      localStorage.removeItem('ai_gym_token');
     }
   }
 }
