@@ -78,7 +78,10 @@ export function getAuthenticatedUser() {
   return null;
 }
 
-const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE = (
+  import.meta.env.VITE_API_URL || 
+  (import.meta.env.PROD ? 'https://ai-gym-trainer-fjvd.onrender.com' : '')
+).replace(/\/$/, '');
 
 /**
  * User Login with server validation and JWT issuance.
@@ -90,6 +93,14 @@ export async function loginUser(email, password) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return {
+        success: false,
+        error: 'Backend is waking up or returned an invalid response. Please wait 10 seconds and try again.'
+      };
+    }
 
     const data = await res.json();
     if (!res.ok || !data.success) {
@@ -111,7 +122,7 @@ export async function loginUser(email, password) {
   } catch (err) {
     return { 
       success: false, 
-      error: 'Unable to connect to authentication server. Please check your network or try again.' 
+      error: 'Unable to connect to authentication server. Please check your network or wait a few seconds for the Render backend to wake up.' 
     };
   }
 }
@@ -141,6 +152,14 @@ export async function registerUser({ name, email, password, confirmPassword }) {
       body: JSON.stringify({ name, email, password, confirmPassword })
     });
 
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return {
+        success: false,
+        error: 'Backend is waking up or returned an invalid response. Please wait 10 seconds and try again.'
+      };
+    }
+
     const data = await res.json();
     if (!res.ok || !data.success) {
       return { 
@@ -161,7 +180,7 @@ export async function registerUser({ name, email, password, confirmPassword }) {
   } catch (err) {
     return { 
       success: false, 
-      error: 'Unable to connect to registration server. Please try again.' 
+      error: 'Unable to connect to registration server. Please check your network or wait a few seconds for the Render backend to wake up.' 
     };
   }
 }

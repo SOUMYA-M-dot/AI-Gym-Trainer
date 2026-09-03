@@ -291,6 +291,22 @@ app.get('/api/auth/me', async (req, res) => {
   }
 });
 
+// Root endpoint for browser checks
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'online',
+    service: 'AI Gym Trainer Authentication API',
+    database: isMongoConnected ? 'MongoDB Atlas' : 'In-Memory Fallback',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/api/health',
+      register: 'POST /api/auth/register',
+      login: 'POST /api/auth/login',
+      me: 'GET /api/auth/me'
+    }
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ 
