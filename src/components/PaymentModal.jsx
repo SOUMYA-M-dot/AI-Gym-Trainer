@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { CreditCard, CheckCircle2, ShieldCheck, X, AlertCircle, Zap } from 'lucide-react';
 import { setMembershipPaid } from '../utils/workoutStorage';
 import { openRazorpayCheckout } from '../utils/razorpay';
+import { getAuthToken } from '../utils/auth';
 
 const PaymentModal = ({ 
   user,
@@ -38,6 +39,19 @@ const PaymentModal = ({
             currency: 'INR',
             paidAt: new Date().toISOString()
           });
+
+          // Sync paid status to MongoDB backend
+          const token = getAuthToken();
+          if (token) {
+            const API_BASE = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://ai-gym-trainer-fjvd.onrender.com' : '')).replace(/\/$/, '');
+            fetch(`${API_BASE}/api/auth/membership`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              }
+            }).catch(() => {});
+          }
 
           // Redirect after brief delay
           setTimeout(() => {

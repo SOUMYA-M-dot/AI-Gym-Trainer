@@ -93,16 +93,24 @@ const PAYMENT_DETAILS_KEY = 'ai_gym_payment_receipt';
 
 export function getMembershipPaid(userEmail = null) {
   if (typeof window === 'undefined') return false;
+  // Clear any legacy global payment flag from earlier testing
+  try {
+    localStorage.removeItem(PAYMENT_KEY);
+  } catch (e) {}
+
   if (userEmail) {
     const userPaid = localStorage.getItem(`${PAYMENT_KEY}_${userEmail.trim().toLowerCase()}`);
-    if (userPaid === 'true') return true;
+    return userPaid === 'true';
   }
-  return localStorage.getItem(PAYMENT_KEY) === 'true';
+  return false;
 }
 
 export function setMembershipPaid(isPaid, userEmail = null, paymentDetails = null) {
   if (typeof window !== 'undefined') {
-    localStorage.setItem(PAYMENT_KEY, isPaid ? 'true' : 'false');
+    try {
+      localStorage.removeItem(PAYMENT_KEY);
+    } catch (e) {}
+
     if (userEmail) {
       localStorage.setItem(`${PAYMENT_KEY}_${userEmail.trim().toLowerCase()}`, isPaid ? 'true' : 'false');
     }

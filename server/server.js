@@ -128,7 +128,8 @@ app.post('/api/auth/register', async (req, res) => {
       const newUser = await User.create({
         name: trimmedName,
         email: cleanEmail,
-        password: hashedPassword
+        password: hashedPassword,
+        isPaid: false
       });
 
       const token = generateToken(newUser);
@@ -139,7 +140,8 @@ app.post('/api/auth/register', async (req, res) => {
         user: {
           id: newUser._id,
           name: newUser.name,
-          email: newUser.email
+          email: newUser.email,
+          isPaid: false
         }
       });
     } else {
@@ -157,6 +159,7 @@ app.post('/api/auth/register', async (req, res) => {
         name: trimmedName,
         email: cleanEmail,
         password: hashedPassword,
+        isPaid: false,
         createdAt: new Date()
       };
       fallbackUsers.push(fallbackUser);
@@ -169,7 +172,8 @@ app.post('/api/auth/register', async (req, res) => {
         user: {
           id: fallbackUser._id,
           name: fallbackUser.name,
-          email: fallbackUser.email
+          email: fallbackUser.email,
+          isPaid: false
         }
       });
     }
@@ -228,7 +232,8 @@ app.post('/api/auth/login', async (req, res) => {
       user: {
         id: targetUser._id || targetUser.id,
         name: targetUser.name,
-        email: targetUser.email
+        email: targetUser.email,
+        isPaid: Boolean(targetUser.isPaid)
       }
     });
   } catch (error) {
@@ -268,7 +273,7 @@ app.get('/api/auth/me', async (req, res) => {
     } else {
       const u = fallbackUsers.find(fu => fu._id === decoded.id || fu.email === decoded.email);
       if (u) {
-        userDetails = { id: u._id, name: u.name, email: u.email };
+        userDetails = { id: u._id, name: u.name, email: u.email, isPaid: Boolean(u.isPaid) };
       }
     }
 
@@ -281,13 +286,51 @@ app.get('/api/auth/me', async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      user: userDetails
+      user: {
+        id: userDetails._id || userDetails.id,
+        name: userDetails.name,
+        email: userDetails.email,
+        isPaid: Boolean(userDetails.isPaid)
+      }
     });
   } catch (error) {
     return res.status(500).json({ 
       success: false, 
       message: 'Server error: ' + error.message 
     });
+  }
+});
+
+// 4. UPGRADE MEMBERSHIP (Protected with JWT)
+app.post('/api/auth/membership', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ success: false, message: 'Invalid token' });
+    }
+
+    if (isMongoConnected) {
+      await User.findByIdAndUpdate(decoded.id, { isPaid: true });
+    } else {
+      const u = fallbackUsers.find(fu => fu._id === decoded.id || fu.email === decoded.email);
+      if (u) u.isPaid = true;
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Lifetime Pass activated successfully',
+      isPaid: true
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 });
 

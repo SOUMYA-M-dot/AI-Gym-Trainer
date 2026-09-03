@@ -45,7 +45,10 @@ function App() {
   const [theme, setTheme] = useState(() => getStoredTheme());
   const [user, setUser] = useState(() => getStoredUser());
   const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(getStoredUser()));
-  const [isPaid, setIsPaid] = useState(() => getMembershipPaid(getStoredUser()?.email));
+  const [isPaid, setIsPaid] = useState(() => {
+    const current = getStoredUser();
+    return Boolean(current?.isPaid || getMembershipPaid(current?.email));
+  });
   const [isGuestSession, setIsGuestSession] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -229,7 +232,7 @@ function App() {
         onLogin={(userData) => {
           setUser(userData);
           setIsLoggedIn(true);
-          setIsPaid(getMembershipPaid(userData?.email));
+          setIsPaid(Boolean(userData?.isPaid || getMembershipPaid(userData?.email)));
         }} 
         theme={theme}
         onToggleTheme={toggleTheme}
